@@ -1,0 +1,39 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<h2>Images</h2>
+
+<h3>Upload Image</h3>
+<form method="post" action="{% url 'images' %}" enctype="multipart/form-data">
+	{% csrf_token %}
+	{{ form.non_field_errors }}
+	<div>
+		{{ form.title.label_tag }}
+		{{ form.title }}
+		{{ form.title.errors }}
+	</div>
+	<div>
+		{{ form.image.label_tag }}
+		{{ form.image }}
+		{{ form.image.errors }}
+	</div>
+	<button type="submit">Upload</button>
+	{% if success %}<p style="color:green">{{ success }}</p>{% endif %}
+</form>
+
+{% if images %}
+	<ul>
+		{% for img in images %}
+			<li>
+				{{ img.title }}
+				- <a href="{% url 'view_image' img.id %}">View</a>
+			</li>
+		{% endfor %}
+	</ul>
+{% else %}
+	<p>No images found.</p>
+{% endif %}
+
+
+
+{% endblock %}

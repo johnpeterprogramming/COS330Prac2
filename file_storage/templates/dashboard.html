@@ -1,0 +1,20 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+
+<!-- For checking groups -->
+{% load my_app_tags %}
+
+<h2>Dashboard</h2>
+
+<nav>
+    <ul>
+        {% if user.is_authenticated %}
+            <li><a href="{% url 'documents' %}">Documents</a></li>
+            <li><a href="{% url 'confidential %}">Confidential</a></li>
+        {% endif %}
+        <li><a href="{% url 'images'%}">Images</a></li>
+    </ul>
+</nav>
+
+{% endblock %}
