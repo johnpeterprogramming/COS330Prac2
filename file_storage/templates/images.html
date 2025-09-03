@@ -1,25 +1,15 @@
 {% extends "admin/base_site.html" %}
+{% load app_tags %}
 
 {% block content %}
 <h2>Images</h2>
 
-<h3>Upload Image</h3>
-<form method="post" action="{% url 'images' %}" enctype="multipart/form-data">
-	{% csrf_token %}
-	{{ form.non_field_errors }}
-	<div>
-		{{ form.title.label_tag }}
-		{{ form.title }}
-		{{ form.title.errors }}
-	</div>
-	<div>
-		{{ form.image.label_tag }}
-		{{ form.image }}
-		{{ form.image.errors }}
-	</div>
-	<button type="submit">Upload</button>
-	{% if success %}<p style="color:green">{{ success }}</p>{% endif %}
-</form>
+{% if messages %}
+    {% for message in messages %}
+        <div style="color: green;">{{ message }}</div>
+    {% endfor %}
+{% endif %}
+
 
 {% if images %}
 	<ul>
@@ -27,6 +17,9 @@
 			<li>
 				{{ img.title }}
 				- <a href="{% url 'view_image' img.id %}">View</a>
+                {% if user|has_group:"Admin,Manager" %}
+                    - <a href="{% url 'delete_image' img.id %}">Delete</a>
+                {% endif %}
 			</li>
 		{% endfor %}
 	</ul>
@@ -34,6 +27,26 @@
 	<p>No images found.</p>
 {% endif %}
 
+<br>
 
+{% if user.is_authenticated %}
+    <h3>Upload Image</h3>
+    <form method="post" action="{% url 'images' %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <div>
+            {{ form.title.label_tag }}
+            {{ form.title }}
+            {{ form.title.errors }}
+        </div>
+        <div>
+            {{ form.image.label_tag }}
+            {{ form.image }}
+            {{ form.image.errors }}
+        </div>
+        <button type="submit">Upload</button>
+        {% if success %}<p style="color:green">{{ success }}</p>{% endif %}
+    </form>
+{% endif%}
 
 {% endblock %}

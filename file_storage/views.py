@@ -3,6 +3,8 @@ from django.http import HttpResponse, HttpResponseForbidden, FileResponse
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
+from django.contrib import messages
+import os
 from .models import EncryptedImage
 from .utils.encryption import save_encrypted_image, get_decrypted_image
 from .forms import RegisterForm, LoginForm, UploadImageForm
@@ -61,6 +63,25 @@ def view_image(request, image_id):
     img_bytes = get_decrypted_image(image)
 
     return HttpResponse(img_bytes, content_type="image/jpeg")
+
+@login_required
+@group_required('Admin', 'Manager')
+def delete_image(request, image_id):
+    if request.method == 'POST':
+        image: EncryptedImage = get_object_or_404(EncryptedImage, id=image_id)
+        
+        # Delete the physical file
+        if os.path.exists(image.file_path):
+            os.remove(image.file_path)
+        
+        image.delete()
+        
+        messages.success(request, "Image successfully deleted")
+        return redirect("images")
+    
+    # If GET request, show confirmation page
+    image = get_object_or_404(EncryptedImage, id=image_id)
+    return render(request, "confirm_delete.html", {"image": image})
 
 @login_required
 def view_documents(request):
