@@ -19,6 +19,7 @@
 				- <a href="{% url 'view_image' img.id %}">View</a>
                 {% if user|has_group:"Admin,Manager" %}
                     - <a href="{% url 'delete_image' img.id %}">Delete</a>
+                    - <a href="{% url 'update_image' img.id %}">Update</a>
                 {% endif %}
 			</li>
 		{% endfor %}
@@ -29,7 +30,7 @@
 
 <br>
 
-{% if user.is_authenticated %}
+{% if user|has_group:"Admin,Manager" %}
     <h3>Upload Image</h3>
     <form method="post" action="{% url 'images' %}" enctype="multipart/form-data">
         {% csrf_token %}

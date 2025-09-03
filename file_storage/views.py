@@ -4,10 +4,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.contrib import messages
+from django.conf import settings
 import os
 from .models import EncryptedImage
-from .utils.encryption import save_encrypted_image, get_decrypted_image
-from .forms import RegisterForm, LoginForm, UploadImageForm
+from .utils.encryption import save_encrypted_image, get_decrypted_image, encrypt_bytes
+from .forms import RegisterForm, LoginForm, UploadImageForm, UpdateImageForm
 
 def login_view(request):
     if request.method == "POST":
@@ -82,6 +83,49 @@ def delete_image(request, image_id):
     # If GET request, show confirmation page
     image = get_object_or_404(EncryptedImage, id=image_id)
     return render(request, "confirm_delete.html", {"image": image})
+
+
+@login_required
+@group_required('Admin', 'Manager')
+def update_image(request, image_id):
+    image = get_object_or_404(EncryptedImage, id=image_id)
+    
+    if request.method == 'POST':
+        form = UpdateImageForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Update title
+            image.title = form.cleaned_data['title']
+            
+            # If new image uploaded, replace the encrypted file
+            if form.cleaned_data['image']:
+                # Delete old file
+                if os.path.exists(image.file_path):
+                    os.remove(image.file_path)
+                
+                # Save new encrypted image
+                uploaded_file = form.cleaned_data['image']
+                img_bytes = uploaded_file.read()
+                encrypted = encrypt_bytes(img_bytes)
+                
+                # Save to same path or generate new one
+                folder = os.path.join(settings.MEDIA_ROOT, "images")
+                os.makedirs(folder, exist_ok=True)
+                filename = f"{image.title}.bin"
+                file_path = os.path.join(folder, filename)
+                
+                with open(file_path, "wb") as f:
+                    f.write(encrypted)
+                
+                image.file_path = file_path
+            
+            image.save()
+            messages.success(request, "Image successfully updated")
+            return redirect("images")
+    else:
+        # Pre-populate form with current data
+        form = UpdateImageForm(initial={'title': image.title})
+    
+    return render(request, "update_image.html", {"form": form, "image": image})
 
 @login_required
 def view_documents(request):

@@ -25,3 +25,8 @@ class LoginForm(AuthenticationForm):
 class UploadImageForm(forms.Form):
     title = forms.CharField(max_length=128)
     image = forms.ImageField()
+
+
+class UpdateImageForm(forms.Form):
+    title = forms.CharField(max_length=128)
+    image = forms.ImageField(required=False, help_text="Leave empty to keep current image")
