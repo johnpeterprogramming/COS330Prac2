@@ -6,9 +6,10 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.conf import settings
 import os
-from .models import EncryptedImage
-from .utils.encryption import save_encrypted_image, get_decrypted_image, encrypt_bytes
-from .forms import RegisterForm, LoginForm, UploadImageForm, UpdateImageForm
+from .models import EncryptedImage, EncryptedDocument
+from .utils.encryption import save_encrypted_image, save_encrypted_document, get_decrypted_image, get_decrypted_document, encrypt_bytes
+from .forms import RegisterForm, LoginForm, UploadImageForm, UpdateImageForm, UploadDocumentForm, UpdateDocumentForm
+
 
 def login_view(request):
     if request.method == "POST":
@@ -58,6 +59,7 @@ def group_required(*group_names):
 #         return HttpResponse("Image uploaded.")
 #     return render(request, "upload.html")
 
+# Image operations
 @login_required
 def view_image(request, image_id):
     image: EncryptedImage = get_object_or_404(EncryptedImage, id=image_id)
@@ -82,7 +84,7 @@ def delete_image(request, image_id):
     
     # If GET request, show confirmation page
     image = get_object_or_404(EncryptedImage, id=image_id)
-    return render(request, "confirm_delete.html", {"image": image})
+    return render(request, "confirm_delete_image.html", {"image": image})
 
 
 @login_required
@@ -127,9 +129,90 @@ def update_image(request, image_id):
     
     return render(request, "update_image.html", {"form": form, "image": image})
 
+
+# Document operations
 @login_required
-def view_documents(request):
-    return render(request, "documents.html")
+def view_document(request, document_id):
+    document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
+    img_bytes = get_decrypted_document(document)
+
+    return HttpResponse(img_bytes, content_type="document/jpeg")
+
+@login_required
+@group_required('Admin', 'Manager')
+def delete_document(request, document_id):
+    if request.method == 'POST':
+        document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
+        
+        # Delete the physical file
+        if os.path.exists(document.file_path):
+            os.remove(document.file_path)
+        
+        document.delete()
+        
+        messages.success(request, "document successfully deleted")
+        return redirect("documents")
+    
+    # If GET request, show confirmation page
+    document = get_object_or_404(EncryptedDocument, id=document_id)
+    return render(request, "confirm_delete_document.html", {"document": document})
+
+
+@login_required
+@group_required('Admin', 'Manager')
+def update_document(request, document_id):
+    document = get_object_or_404(EncryptedDocument, id=document_id)
+    
+    if request.method == 'POST':
+        form = UpdateDocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Update title
+            document.title = form.cleaned_data['title']
+            
+            # If new document uploaded, replace the encrypted file
+            if form.cleaned_data['document']:
+                # Delete old file
+                if os.path.exists(document.file_path):
+                    os.remove(document.file_path)
+                
+                # Save new encrypted document
+                uploaded_file = form.cleaned_data['document']
+                img_bytes = uploaded_file.read()
+                encrypted = encrypt_bytes(img_bytes)
+                
+                # Save to same path or generate new one
+                folder = os.path.join(settings.MEDIA_ROOT, "documents")
+                os.makedirs(folder, exist_ok=True)
+                filename = f"{document.title}.bin"
+                file_path = os.path.join(folder, filename)
+                
+                with open(file_path, "wb") as f:
+                    f.write(encrypted)
+                
+                document.file_path = file_path
+            
+            document.save()
+            messages.success(request, "document successfully updated")
+            return redirect("documents")
+    else:
+        # Pre-populate form with current data
+        form = UpdateDocumentForm(initial={'title': document.title})
+    
+    return render(request, "update_document.html", {"form": form, "document": document})
+
+@login_required
+def documents(request):
+    if request.method == 'POST':
+        form = UploadDocumentForm(request.POST, request.FILES)
+        if form.is_valid():
+            title = form.cleaned_data['title']
+            uploaded_file = form.cleaned_data['document']
+            save_encrypted_document(uploaded_file, title)
+            return redirect('documents')
+    else:
+        form = UploadDocumentForm()
+    documents = EncryptedDocument.objects.all().order_by('-id')
+    return render(request, "documents.html", {"documents": documents, "form": form})
 
 @login_required
 def view_confidential(request):

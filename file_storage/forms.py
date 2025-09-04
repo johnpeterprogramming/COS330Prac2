@@ -30,3 +30,12 @@ class UploadImageForm(forms.Form):
 class UpdateImageForm(forms.Form):
     title = forms.CharField(max_length=128)
     image = forms.ImageField(required=False, help_text="Leave empty to keep current image")
+
+class UploadDocumentForm(forms.Form):
+    title = forms.CharField(max_length=128)
+    document = forms.FileField()
+
+
+class UpdateDocumentForm(forms.Form):
+    title = forms.CharField(max_length=128)
+    document = forms.FileField(required=False, help_text="Leave empty to keep current document")

@@ -6,4 +6,11 @@ class EncryptedImage(models.Model):
     file_path = models.CharField(max_length=256)
 
     def __str__(self):
-        return self.title
+        return "Image " + self.title
+
+class EncryptedDocument(models.Model):
+    title = models.CharField(max_length=128)
+    file_path = models.CharField(max_length=256)
+
+    def __str__(self):
+        return "Document " + self.title

@@ -136,3 +136,12 @@ MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Custom login URL
+LOGIN_URL = '/login/'
+
+# Redirect after successful login (if not specified in URL)
+LOGIN_REDIRECT_URL = '/dashboard/'
+
+# Redirect after logout
+LOGOUT_REDIRECT_URL = '/login/'

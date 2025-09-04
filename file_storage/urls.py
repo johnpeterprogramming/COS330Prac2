@@ -13,6 +13,10 @@ urlpatterns = [
     path('images/<int:image_id>/', views.view_image, name='view_image'),
     path('images/', views.images, name='images'),
 
-    path('documents/', views.view_documents, name='documents'),
+    path('documents/<int:document_id>/delete', views.delete_document, name='delete_document'),
+    path('documents/<int:document_id>/update', views.update_document, name='update_document'),
+    path('documents/<int:document_id>/', views.view_document, name='view_document'),
+    path('documents/', views.documents, name='documents'),
+
     path('confidential/', views.view_confidential, name='confidential'),
 ]
