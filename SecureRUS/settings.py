@@ -34,7 +34,8 @@ DEBUG = env("DEBUG")
 
 # Key used for file encryption
 FERNET_KEY = env("FERNET_KEY")
-# ENCRYPTED_FILEFIELD_SALT = env("ENCRYPTED_FILEFIELD_SALT")
+SALT_KEY = env("SALT_FIELD")
+FIELD_ENCRYPTION_KEY = env('FIELD_ENCRYPTION_KEY')
 # ENCRYPTED_FILEFIELD_PASSWORD = env("ENCRYPTED_FILEFIELD_PASSWORD")
 
 ALLOWED_HOSTS = []
@@ -50,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_cryptography',
+    'encrypted_model_fields',
     'file_storage.apps.FileStorageConfig',
 ]
 

@@ -39,3 +39,7 @@ class UploadDocumentForm(forms.Form):
 class UpdateDocumentForm(forms.Form):
     title = forms.CharField(max_length=128)
     document = forms.FileField(required=False, help_text="Leave empty to keep current document")
+
+class UpdateConfidentialForm(forms.Form):
+    title = forms.CharField(max_length=128)
+    text = forms.CharField(widget=forms.Textarea(attrs={'rows': 10, 'cols': 50}))

@@ -1,7 +1,52 @@
 {% extends "admin/base_site.html" %}
+{% load app_tags %}
 
 {% block content %}
 <h2>Confidential</h2>
 
+{% if messages %}
+{% for message in messages %}
+<div style="color: green;">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+
+{% if confidentials %}
+<ul>
+    {% for con in confidentials %}
+    <li>
+        {{ con.title }}
+        - <a href="{% url 'update_confidential' con.id %}">View/Update</a>
+        {% if user|has_group:"Admin" %}
+        - <a href="{% url 'delete_confidential' con.id %}">Delete</a>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<p>No confidential files found.</p>
+{% endif %}
+
+<br>
+
+{% if user|has_group:"Admin,Manager" %}
+<h3>Create new Confidential file</h3>
+<form method="post" action="{% url 'confidential' %}">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div>
+        {{ form.title.label_tag }}
+        {{ form.title }}
+        {{ form.title.errors }}
+    </div>
+    <div>
+        {{ form.text.label_tag }}
+        {{ form.text }}
+        {{ form.text.errors }}
+    </div>
+    <button type="submit">Upload</button>
+    {% if success %}<p style="color:green">{{ success }}</p>{% endif %}
+</form>
+{% endif%}
 
 {% endblock %}

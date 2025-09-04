@@ -18,5 +18,7 @@ urlpatterns = [
     path('documents/<int:document_id>/', views.view_document, name='view_document'),
     path('documents/', views.documents, name='documents'),
 
-    path('confidential/', views.view_confidential, name='confidential'),
+    path('confidential/<int:confidential_id>/delete', views.delete_confidential, name='delete_confidential'),
+    path('confidential/<int:confidential_id>/update', views.update_confidential, name='update_confidential'),
+    path('confidential/', views.confidential, name='confidential'),
 ]

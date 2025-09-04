@@ -6,9 +6,9 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.conf import settings
 import os
-from .models import EncryptedImage, EncryptedDocument
+from .models import EncryptedImage, EncryptedDocument, EncryptedConfidential
 from .utils.encryption import save_encrypted_image, save_encrypted_document, get_decrypted_image, get_decrypted_document, encrypt_bytes
-from .forms import RegisterForm, LoginForm, UploadImageForm, UpdateImageForm, UploadDocumentForm, UpdateDocumentForm
+from .forms import RegisterForm, LoginForm, UploadImageForm, UpdateImageForm, UploadDocumentForm, UpdateDocumentForm, UpdateConfidentialForm
 
 
 def login_view(request):
@@ -49,18 +49,9 @@ def group_required(*group_names):
         return False
     return user_passes_test(in_groups)
 
-# @login_required
-# @group_required('Admin', 'Manager')
-# def upload_image(request):
-#     if request.method == "POST":
-#         uploaded_file = request.FILES['image']
-#         title = request.POST['title']
-#         save_encrypted_image(uploaded_file, title)
-#         return HttpResponse("Image uploaded.")
-#     return render(request, "upload.html")
+
 
 # Image operations
-@login_required
 def view_image(request, image_id):
     image: EncryptedImage = get_object_or_404(EncryptedImage, id=image_id)
     img_bytes = get_decrypted_image(image)
@@ -132,11 +123,12 @@ def update_image(request, image_id):
 
 # Document operations
 @login_required
+@group_required('Admin', 'Manager', 'User')
 def view_document(request, document_id):
     document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
     img_bytes = get_decrypted_document(document)
 
-    return HttpResponse(img_bytes, content_type="document/jpeg")
+    return HttpResponse(img_bytes, content_type="application/pdf")
 
 @login_required
 @group_required('Admin', 'Manager')
@@ -200,6 +192,39 @@ def update_document(request, document_id):
     
     return render(request, "update_document.html", {"form": form, "document": document})
 
+# Confidential files
+@login_required
+@group_required('Admin', 'Manager')
+def update_confidential(request, confidential_id):
+    confidential: EncryptedConfidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
+    if (request.method == "POST"):
+        form = UpdateConfidentialForm(request.POST)
+        if form.is_valid():
+            confidential.title = form.cleaned_data['title']
+            confidential.text = form.cleaned_data['text']
+            confidential.save()
+
+            messages.success(request, "confidentially successfully saved")
+            return redirect("confidential")
+    else:
+        form = UpdateConfidentialForm(initial={'title': confidential.title, 'text': confidential.text})
+
+    return render(request, "update_confidential.html", {"form": form, "confidential": confidential})
+
+@login_required
+@group_required('Admin')
+def delete_confidential(request, confidential_id):
+    if request.method == 'POST':
+        confidential: EncryptedConfidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
+        confidential.delete()
+
+        messages.success(request, "confidential was deleted successfully")
+        return redirect("confidential")
+
+    # If GET request, show confirmation page
+    confidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
+    return render(request, "confirm_delete_confidential.html", {"confidential": confidential})
+
 @login_required
 def documents(request):
     if request.method == 'POST':
@@ -215,8 +240,24 @@ def documents(request):
     return render(request, "documents.html", {"documents": documents, "form": form})
 
 @login_required
-def view_confidential(request):
-    return render(request, "confidential.html")
+@group_required('Admin')
+def confidential(request):
+    # Create
+    if request.method == 'POST':
+        form = UpdateConfidentialForm(request.POST)
+        if form.is_valid():
+            text = form.cleaned_data['text']
+            title = form.cleaned_data['title']
+            confidential = EncryptedConfidential(title=title, text=text)
+            confidential.save()
+
+            return redirect('confidential')
+    else:
+        form = UpdateConfidentialForm()
+
+    # Read
+    confidentials = EncryptedConfidential.objects.all().order_by('-id')
+    return render(request, "confidential.html", {"confidentials": confidentials, "form": form})
 
 def images(request):
     if request.method == 'POST':
