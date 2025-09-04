@@ -6,8 +6,10 @@
 
 <nav>
     <ul>
-        {% if user.is_authenticated %}
+        {% if perms.file_storage.view_encrypteddocument %}
             <li><a href="{% url 'documents' %}">Documents</a></li>
+        {% endif %}
+        {% if perms.file_storage.view_encryptedconfidential %}
             <li><a href="{% url 'confidential' %}">Confidential</a></li>
         {% endif %}
         <li><a href="{% url 'images'%}">Images</a></li>

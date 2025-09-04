@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, HttpResponseForbidden, FileResponse
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.conf import settings
+from django.core.exceptions import PermissionDenied
 import os
 from .models import EncryptedImage, EncryptedDocument, EncryptedConfidential
 from .utils.encryption import save_encrypted_image, save_encrypted_document, get_decrypted_image, get_decrypted_document, encrypt_bytes
@@ -40,15 +41,6 @@ def register_view(request):
 def dashboard(request):
     return render(request, "dashboard.html")
 
-# Helper function to check roles
-def group_required(*group_names):
-    def in_groups(user):
-        if user.is_authenticated:
-            if user.is_superuser or bool(user.groups.filter(name__in=group_names)):
-                return True
-        return False
-    return user_passes_test(in_groups)
-
 
 
 # Image operations
@@ -59,7 +51,7 @@ def view_image(request, image_id):
     return HttpResponse(img_bytes, content_type="image/jpeg")
 
 @login_required
-@group_required('Admin', 'Manager')
+@permission_required('file_storage.delete_encryptedimage', raise_exception=True)
 def delete_image(request, image_id):
     if request.method == 'POST':
         image: EncryptedImage = get_object_or_404(EncryptedImage, id=image_id)
@@ -79,7 +71,7 @@ def delete_image(request, image_id):
 
 
 @login_required
-@group_required('Admin', 'Manager')
+@permission_required('file_storage.change_encryptedimage', raise_exception=True)
 def update_image(request, image_id):
     image = get_object_or_404(EncryptedImage, id=image_id)
     
@@ -123,7 +115,7 @@ def update_image(request, image_id):
 
 # Document operations
 @login_required
-@group_required('Admin', 'Manager', 'User')
+@permission_required('file_storage.view_encrypteddocument', raise_exception=True)
 def view_document(request, document_id):
     document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
     img_bytes = get_decrypted_document(document)
@@ -131,7 +123,7 @@ def view_document(request, document_id):
     return HttpResponse(img_bytes, content_type="application/pdf")
 
 @login_required
-@group_required('Admin', 'Manager')
+@permission_required('file_storage.delete_encrypteddocument', raise_exception=True)
 def delete_document(request, document_id):
     if request.method == 'POST':
         document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
@@ -151,11 +143,13 @@ def delete_document(request, document_id):
 
 
 @login_required
-@group_required('Admin', 'Manager')
+@permission_required('file_storage.change_encrypteddocument', raise_exception=True)
 def update_document(request, document_id):
     document = get_object_or_404(EncryptedDocument, id=document_id)
     
     if request.method == 'POST':
+        if not request.user.has_perm('file_storage.change_encrypteddocument'):
+            raise PermissionDenied()
         form = UpdateDocumentForm(request.POST, request.FILES)
         if form.is_valid():
             # Update title
@@ -194,10 +188,13 @@ def update_document(request, document_id):
 
 # Confidential files
 @login_required
-@group_required('Admin', 'Manager')
+@permission_required('file_storage.view_encryptedconfidential', raise_exception=True)
 def update_confidential(request, confidential_id):
     confidential: EncryptedConfidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
     if (request.method == "POST"):
+        if not request.user.has_perm('file_storage.change_encryptedconfidential'):
+            raise PermissionDenied()
+
         form = UpdateConfidentialForm(request.POST)
         if form.is_valid():
             confidential.title = form.cleaned_data['title']
@@ -212,7 +209,7 @@ def update_confidential(request, confidential_id):
     return render(request, "update_confidential.html", {"form": form, "confidential": confidential})
 
 @login_required
-@group_required('Admin')
+@permission_required('file_storage.delete_encryptedconfidential', raise_exception=True)
 def delete_confidential(request, confidential_id):
     if request.method == 'POST':
         confidential: EncryptedConfidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
@@ -226,8 +223,12 @@ def delete_confidential(request, confidential_id):
     return render(request, "confirm_delete_confidential.html", {"confidential": confidential})
 
 @login_required
+@permission_required('file_storage.view_encrypteddocument', raise_exception=True)
 def documents(request):
     if request.method == 'POST':
+        if not request.user.has_perm('file_storage.add_encrypteddocument'):
+            raise PermissionDenied()
+
         form = UploadDocumentForm(request.POST, request.FILES)
         if form.is_valid():
             title = form.cleaned_data['title']
@@ -240,10 +241,13 @@ def documents(request):
     return render(request, "documents.html", {"documents": documents, "form": form})
 
 @login_required
-@group_required('Admin')
+@permission_required('file_storage.view_encryptedconfidential', raise_exception=True)
 def confidential(request):
     # Create
     if request.method == 'POST':
+        if not request.user.has_perm('file_storage.add_encryptedconfidential'):
+            raise PermissionDenied()
+
         form = UpdateConfidentialForm(request.POST)
         if form.is_valid():
             text = form.cleaned_data['text']
@@ -261,6 +265,9 @@ def confidential(request):
 
 def images(request):
     if request.method == 'POST':
+        if not request.user.has_perm('file_storage.add_encryptedimage'):
+            raise PermissionDenied()
+
         form = UploadImageForm(request.POST, request.FILES)
         if form.is_valid():
             title = form.cleaned_data['title']

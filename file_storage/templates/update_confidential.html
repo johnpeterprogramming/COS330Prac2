@@ -17,7 +17,10 @@
         {{ form.text.errors }}
         <small>{{ form.text.help_text }}</small>
     </div>
+    {% if perms.file_storage.change_encryptedconfidential %}
     <button type="submit">Update</button>
+    {% endif %}
+
     <a href="{% url 'confidential' %}">Cancel</a>
 </form>
 {% endblock %}

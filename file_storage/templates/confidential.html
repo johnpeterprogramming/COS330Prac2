@@ -1,5 +1,4 @@
 {% extends "admin/base_site.html" %}
-{% load app_tags %}
 
 {% block content %}
 <h2>Confidential</h2>
@@ -16,9 +15,11 @@
     {% for con in confidentials %}
     <li>
         {{ con.title }}
-        - <a href="{% url 'update_confidential' con.id %}">View/Update</a>
-        {% if user|has_group:"Admin" %}
-        - <a href="{% url 'delete_confidential' con.id %}">Delete</a>
+        {% if perms.file_storage.change_encryptedconfidential or perms.file_storage.view_encryptedconfidential %}
+            - <a href="{% url 'update_confidential' con.id %}">View/Update</a>
+        {% endif%}
+        {% if perms.file_storage.delete_encryptedconfidential %}
+            - <a href="{% url 'delete_confidential' con.id %}">Delete</a>
         {% endif %}
     </li>
     {% endfor %}
@@ -29,7 +30,7 @@
 
 <br>
 
-{% if user|has_group:"Admin,Manager" %}
+{% if perms.file_storage.add_encryptedconfidential %}
 <h3>Create new Confidential file</h3>
 <form method="post" action="{% url 'confidential' %}">
     {% csrf_token %}
