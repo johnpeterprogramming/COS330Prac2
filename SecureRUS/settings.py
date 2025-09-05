@@ -53,6 +53,11 @@ INSTALLED_APPS = [
     'django_cryptography',
     'encrypted_model_fields',
     'file_storage.apps.FileStorageConfig',
+    'django_extensions',
+    'django_otp',
+    'django_otp.plugins.otp_totp',
+    'django_otp.plugins.otp_static',
+    'two_factor',
 ]
 
 MIDDLEWARE = [
@@ -63,6 +68,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_otp.middleware.OTPMiddleware',
 ]
 
 ROOT_URLCONF = 'SecureRUS.urls'
@@ -139,11 +145,13 @@ MEDIA_ROOT = os.path.join(BASE_DIR, MEDIA_URL)
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Custom login URL
-LOGIN_URL = '/login/'
+# 2FA settings
+TWO_FACTOR_PATCH_ADMIN = True
+TWO_FACTOR_CALL_GATEWAY = None
+TWO_FACTOR_SMS_GATEWAY = None
 
-# Redirect after successful login (if not specified in URL)
-LOGIN_REDIRECT_URL = '/dashboard/'
-
-# Redirect after logout
-LOGOUT_REDIRECT_URL = '/login/'
+# URLs for 2FA
+LOGIN_URL = '/account/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/account/login/'
+OTP_LOGIN_URL = '/account/setup/'

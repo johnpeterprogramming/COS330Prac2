@@ -1,11 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse, HttpResponseForbidden, FileResponse
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django_otp.decorators import otp_required
 import os
 from .models import EncryptedImage, EncryptedDocument, EncryptedConfidential
 from .utils.encryption import save_encrypted_image, save_encrypted_document, get_decrypted_image, get_decrypted_document, encrypt_bytes
@@ -25,6 +26,11 @@ def login_view(request):
         form = LoginForm(request)
     return render(request, "login.html", {"form": form})
 
+def logout_view(request):
+    logout(request)
+    messages.success(request, "You have been logged out.")
+    return redirect('login')
+
 def register_view(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -42,7 +48,6 @@ def dashboard(request):
     return render(request, "dashboard.html")
 
 
-
 # Image operations
 def view_image(request, image_id):
     image: EncryptedImage = get_object_or_404(EncryptedImage, id=image_id)
@@ -51,6 +56,7 @@ def view_image(request, image_id):
     return HttpResponse(img_bytes, content_type="image/jpeg")
 
 @login_required
+@otp_required
 @permission_required('file_storage.delete_encryptedimage', raise_exception=True)
 def delete_image(request, image_id):
     if request.method == 'POST':
@@ -71,6 +77,7 @@ def delete_image(request, image_id):
 
 
 @login_required
+@otp_required
 @permission_required('file_storage.change_encryptedimage', raise_exception=True)
 def update_image(request, image_id):
     image = get_object_or_404(EncryptedImage, id=image_id)
@@ -115,6 +122,7 @@ def update_image(request, image_id):
 
 # Document operations
 @login_required
+@otp_required
 @permission_required('file_storage.view_encrypteddocument', raise_exception=True)
 def view_document(request, document_id):
     document: EncryptedDocument = get_object_or_404(EncryptedDocument, id=document_id)
@@ -123,6 +131,7 @@ def view_document(request, document_id):
     return HttpResponse(img_bytes, content_type="application/pdf")
 
 @login_required
+@otp_required
 @permission_required('file_storage.delete_encrypteddocument', raise_exception=True)
 def delete_document(request, document_id):
     if request.method == 'POST':
@@ -143,6 +152,7 @@ def delete_document(request, document_id):
 
 
 @login_required
+@otp_required
 @permission_required('file_storage.change_encrypteddocument', raise_exception=True)
 def update_document(request, document_id):
     document = get_object_or_404(EncryptedDocument, id=document_id)
@@ -188,6 +198,7 @@ def update_document(request, document_id):
 
 # Confidential files
 @login_required
+@otp_required
 @permission_required('file_storage.view_encryptedconfidential', raise_exception=True)
 def update_confidential(request, confidential_id):
     confidential: EncryptedConfidential = get_object_or_404(EncryptedConfidential, id=confidential_id)
@@ -209,6 +220,7 @@ def update_confidential(request, confidential_id):
     return render(request, "update_confidential.html", {"form": form, "confidential": confidential})
 
 @login_required
+@otp_required
 @permission_required('file_storage.delete_encryptedconfidential', raise_exception=True)
 def delete_confidential(request, confidential_id):
     if request.method == 'POST':
@@ -223,6 +235,7 @@ def delete_confidential(request, confidential_id):
     return render(request, "confirm_delete_confidential.html", {"confidential": confidential})
 
 @login_required
+@otp_required
 @permission_required('file_storage.view_encrypteddocument', raise_exception=True)
 def documents(request):
     if request.method == 'POST':
@@ -240,7 +253,7 @@ def documents(request):
     documents = EncryptedDocument.objects.all().order_by('-id')
     return render(request, "documents.html", {"documents": documents, "form": form})
 
-@login_required
+@otp_required
 @permission_required('file_storage.view_encryptedconfidential', raise_exception=True)
 def confidential(request):
     # Create

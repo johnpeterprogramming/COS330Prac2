@@ -16,8 +16,29 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.contrib.auth.views import LogoutView
+from django.contrib.auth import logout
+from django.shortcuts import redirect
+from django.http import HttpResponse
+from two_factor.views import LoginView, SetupView, BackupTokensView, QRGeneratorView, SetupCompleteView, ProfileView, DisableView
+
+def simple_logout(request):
+    logout(request)
+    return redirect('/account/login/')
+
+two_factor_urls = [
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', simple_logout, name='logout'),
+    path('setup/', SetupView.as_view(), name='setup'),
+    path('qrcode/', QRGeneratorView.as_view(), name='qr'),
+    path('setup/complete/', SetupCompleteView.as_view(), name='setup_complete'),
+    path('backup/tokens/', BackupTokensView.as_view(), name='backup_tokens'),
+    path('profile/', ProfileView.as_view(), name='profile'),
+    path('disable/', DisableView.as_view(), name='disable'),
+]
 
 urlpatterns = [
     path('', include("file_storage.urls")),
     path('manage/', admin.site.urls),
+    path('account/', include((two_factor_urls, 'two_factor'), namespace='two_factor')),
 ]

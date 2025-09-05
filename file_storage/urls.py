@@ -3,10 +3,11 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # path('upload_image/', views.upload_image, name='upload_image'),
-    path('login/', views.login_view, name='login'),
+    # Remove custom login/logout, using 2FA instead
+    # path('login/', views.login_view, name='login'),
+    # path('logout/', views.logout_view, name='logout'),
     path('register/', views.register_view, name='register'),
-    path('dashboard/', views.dashboard, name='dashboard'),
+    path('', views.dashboard, name='dashboard'),
 
     path('images/<int:image_id>/delete', views.delete_image, name='delete_image'),
     path('images/<int:image_id>/update', views.update_image, name='update_image'),
